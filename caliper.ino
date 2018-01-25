@@ -37,7 +37,7 @@ void setup() {
 
 void loop() {  
   
-  if(newValue) 
+  if(newValue)  
   {
    if(finalValue != previousValue) {
      previousValue = finalValue;
