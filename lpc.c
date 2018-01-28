@@ -2,7 +2,7 @@
 #include "spi.h"
 #include "gpio.h"
 #include "extintr.h"
-
+#include "timer.h"
 
 #define SBIT_WordLenght    0x00u
 #define SBIT_DLAB          0x07u
@@ -20,7 +20,7 @@
 #define datapin P0_3
 
 void decodedata(void);
-void clockISR();
+void clockISR(void);
 unsigned char digitalRead(char dataPin);
 //Milliseconds to wait until starting a new value
 //This can be a different value depending on which flavor caliper you are using.
@@ -188,7 +188,7 @@ int main()
 void decodedata(void){
    unsigned char dataIn;
    dataIn = digitalRead(datapin); 
-   
+   TIMER_Start(0);                         /* Start the Timers */
    now = millis();
    
    if((now - lastInterrupt) > cycleTime)
