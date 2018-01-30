@@ -148,7 +148,7 @@ int main()
 		{
 			if(finalValue != previousValue) {
 					previousValue = finalValue;
-					vOut = (unsigned char)finalValue;
+				//	vOut = (unsigned char)finalValue;
 					DECI_ASCII( finalValue ,a);
 
 					  
@@ -180,7 +180,6 @@ void decodedata(void){
    if((now - lastInterrupt) > cycleTime)
    {
      finalValue = (value * sign) / 100.00;
-	 Long_ASCII(finalValue ,a);
      currentBit = 0;
 	 lastInterrupt=0;
      value = 0;
