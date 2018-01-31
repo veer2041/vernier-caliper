@@ -1,4 +1,5 @@
 #include <lpc17xx.h>
+ #include <stdio.h>
 #include <string.h>
 #include "stdutils.h"
 #include "gpio.h"
@@ -31,7 +32,7 @@ void Long_ASCII( long  deci ,unsigned  char *string );
 int wait_ms(int t);
 
 void Init_Wait(void);
-
+char result[150] = "";
 unsigned char ASCII_num[]= { '0','1','2','3','4','5','6','7','8','9' };
 //Milliseconds to wait until starting a new value
 //This can be a different value depending on which flavor caliper you are using.
@@ -127,11 +128,12 @@ void uart_TxChar(char ch)
 int main()
 {
 	char ch;
-	unsigned char a[5];
+	char buffer[64];
+	char a[64];
 	unsigned char vOut;
     SystemInit();
-	
-    TIMER_Init(0,500);   
+	Init_Wait();
+    TIMER_Init(0,100000);     // 100000us means 100ms
 	TIMER_Start(0);
 	uart_init(9600);  // Initialize the UART0 for 9600 baud rate
 			
@@ -146,12 +148,13 @@ int main()
 			
 		if(newValue) 
 		{
-			if(finalValue != previousValue) {
+				if(finalValue != previousValue) {			 //compare previous and present value
 					previousValue = finalValue;
-				//	vOut = (unsigned char)finalValue;
-					DECI_ASCII( finalValue ,a);
-
-					  
+				//	sprintf(result, "%.1f", finalValue);
+				//	uart_TxChar(*result);
+				  Long_ASCII(finalValue ,a);		   //disply caliper value here
+				//	sprintf(buffer, "%f", finalValue);
+				//	uart_TxChar(*buffer); 
 			 }
 				newValue = 0;
 		}
@@ -168,31 +171,33 @@ int main()
     }       
 }
 
-
+/* decode caliper value	*/
 void decodedata(void){
    unsigned char dataIn,vOut;
    int x;
    unsigned char a[15];
-   dataIn=GPIO_PinRead(dataPin);
- // now=getPrescalarForUs(0);
-	now=TIMER_GetTime(0);
-	   
-   if((now - lastInterrupt) > cycleTime)
+   char buffer[64];
+   dataIn=GPIO_PinRead(dataPin);	// read data from digital read pin
+
+	now=TIMER_GetTime(0);	   		// get present time of timer count by deviding 1000
+//	Long_ASCII(now ,a);
+//	sprintf(buffer, "%lu", now);
+//	uart_TxChar(*buffer);   
+   if(now-lastInterrupt > 32)						  //checking wether its >32ms
    {
-     finalValue = (value * sign) / 100.00;
+     finalValue = (value * sign) / 100.00;			 // calculation of caliper value
      currentBit = 0;
 	 lastInterrupt=0;
      value = 0;
      sign = 1;
-     newValue = 1;      
+     newValue = 1;       
    } 
    else if (currentBit < 16 )
-   {
-      
+   {  
      if (dataIn == 0)
      {
        if (currentBit < 16) {
-          value |= 1 << currentBit;
+          value |= 1 << currentBit;					   // calculate value of caliper 
        }  
        else if (currentBit == 20) {
           sign = -1;
@@ -201,21 +206,22 @@ void decodedata(void){
      }
      
      currentBit++;
-   //  Long_ASCII(currentBit ,a);
+//	 DECI_ASCII(currentBit ,a);
    }
    
- //  lastInterrupt = now;
-   lastInterrupt=now;
+   lastInterrupt = now;
+ //  lastInterrupt+=x;
    
 }
 
+/* when external interrupt occurs*/
 void clockISR(){
- clockFlag = 1; 
-  GPIO_PinToggle(LED1); /* Toggle the LED1 (P2_0) */ 
-
+	clockFlag = 1; 
+	GPIO_PinToggle(LED1);  /* Toggle the LED1 (P2_0) */ 
 }
 
-unsigned char digitalRead(char dataPin){
+/*read data of varnier caliper from digital pin*/
+unsigned char digitalRead(char dataPin){	    
 	GPIO_PinDirection(dataPin,INPUT);
 	if(!LPC_GPIO0->FIOPIN & (1<<3)){
 			return 1;
@@ -306,11 +312,9 @@ void Long_ASCII( long  deci ,unsigned  char *string )
 
 int wait_ms(int i)
 {
-	uart_TxChar('t');
 	LPC_TIM3->TCR = 1<<1; //reset timer counter
     LPC_TIM3->TCR = 1;    //enable timer counter
     while (LPC_TIM3->TC < i);
-	uart_TxChar('t');
 	return 1; 	
 }
 
